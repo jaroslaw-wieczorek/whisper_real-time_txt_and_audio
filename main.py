@@ -8,6 +8,7 @@ import sys
 import time
 from scipy.io import wavfile
 import logging
+import os
 
 # SETTINGS
 
@@ -57,11 +58,25 @@ model = whisper.load_model(MODEL_TYPE)
 print(model)
 print("[+] Load model end.")
 
+directory = './records'
+prefix = 'recording_'
+
+files = [os.path.join(directory, file) for file in os.listdir(directory) if file.startswith(prefix) and file.endswith(".wav")]
+files = sorted(files, key=lambda x: int(x.split("_")[-1].split(".")[0]))
+print(f'Current files: {files}')
+
+if files:
+    last_wav_file = files[-1]
+    file_counter = int(last_wav_file.split("_")[1].split(".")[0])
+    file_counter += 1
+
+print(f'file_counter {file_counter}')
+
 async def save_audio_to_file():
     global audio_ndarray, samplerate, file_counter, duration
     while True:
         if audio_ndarray is not None and audio_ndarray.size >= duration*samplerate:
-            filename = f'recordings_{file_counter}.wav'
+            filename = f'{directory}/{prefix}{file_counter}.wav'
             file_counter += 1
             wavfile.write(filename, samplerate, audio_ndarray)
             audio_ndarray = None
@@ -73,7 +88,7 @@ def signal_handler(sig, frame):
     print('\nInterrupted, saving last recording...')
     global audio_ndarray, samplerate, file_counter
     if audio_ndarray is not None:
-        filename = f'recordings_{file_counter}.wav'
+        filename = f'{directory}/{prefix}{file_counter}.wav'
         file_counter += 1
         print(f'Saved last recording {filename}')
         wavfile.write(filename, samplerate, audio_ndarray)
